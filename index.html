@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SAP GUI 7.70 Real Multi-Screen Simulator - MM / WM / LE</title>
+  <style>
+    :root {
+      --sap-title: #0b386b;
+      --sap-bg: #dbe4ee;
+      --sap-canvas: #f2f6fb;
+      --sap-border: #7f9db9;
+      --sap-focus: #fef08a;
+      --primary: #0b4f6c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Tahoma, "Segoe UI", Arial, sans-serif; }
+    body { background: #0f172a; color: #1e293b; padding-bottom: 30px; }
+
+    /* Top Academy Switcher */
+    .academy-bar {
+      background: linear-gradient(90deg, #0b4f6c, #028090);
+      color: #fff;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #38bdf8;
+    }
+    .academy-tabs { display: flex; gap: 8px; }
+    .acad-btn {
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 6px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 13px;
+    }
+    .acad-btn.active, .acad-btn:hover { background: #fff; color: #0b4f6c; }
+
+    .main-wrapper { max-width: 1380px; margin: 15px auto; padding: 0 12px; }
+    .view-section { display: none; }
+    .view-section.active { display: block; }
+
+    /* Layout: Simulator + Guide Sidebar */
+    .sim-grid {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 15px;
+      align-items: start;
+    }
+    @media (max-width: 1050px) { .sim-grid { grid-template-columns: 1fr; } }
+
+    /* ====================================================
+       AUTHENTIC SAP GUI 7.70 WINDOW
+       ==================================================== */
+    .sap-window {
+      direction: ltr;
+      background: var(--sap-bg);
+      border: 2px solid #5a7b9c;
+      border-radius: 5px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* 1. Window Title Bar */
+    .sap-win-header {
+      background: linear-gradient(to bottom, #dce9f7 0%, #abc6e4 100%);
+      padding: 5px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #6c8dae;
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--sap-title);
+    }
+
+    /* 2. Menu Bar */
+    .sap-menubar {
+      background: #e4ecf5;
+      padding: 3px 10px;
+      border-bottom: 1px solid #b3c5d7;
+      display: flex;
+      gap: 16px;
+      font-size: 11px;
+      color: #1e293b;
+    }
+    .sap-menubar span { cursor: pointer; }
+    .sap-menubar span:hover { text-decoration: underline; color: #0284c7; }
+
+    /* 3. Standard System Toolbar (Command Field + Navigation Icons) */
+    .sap-std-toolbar {
+      background: #edf3fa;
+      padding: 5px 10px;
+      border-bottom: 1px solid #9ab0c7;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .sap-enter-btn {
+      background: #dcfce7;
+      border: 1px solid #22c55e;
+      color: #15803d;
+      font-weight: bold;
+      padding: 2px 7px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .sap-okcode {
+      width: 115px;
+      padding: 3px 6px;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+      font-weight: bold;
+      text-transform: uppercase;
+      border: 1px solid #5a7b9c;
+      background: #fff;
+    }
+    .sap-okcode:focus { background: var(--sap-focus); outline: 1px solid #ca8a04; }
+
+    .sap-icon-btn {
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      background: linear-gradient(to bottom, #ffffff, #d9e3f0);
+      border: 1px solid #7f9db9;
+      border-radius: 3px;
+      cursor: pointer;
+      color: #1e293b;
+    }
+    .sap-icon-btn:hover { background: #cbe0f5; }
+
+    /* 4. Application Toolbar (F8 Execute, Check, Post, Hold) */
+    .sap-app-toolbar {
+      background: #dfe9f4;
+      padding: 5px 10px;
+      border-bottom: 2px solid #8ba4be;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+    }
+    .sap-app-btn {
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: bold;
+      border: 1px solid #6c8dae;
+      border-radius: 3px;
+      background: linear-gradient(to bottom, #fff, #cfdpeb);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .sap-app-btn.exec { background: #bbf7d0; border-color: #16a34a; color: #14532d; }
+    .sap-app-btn.check { background: #fef08a; border-color: #ca8a04; color: #713f12; }
+    .sap-app-btn.post { background: #38bdf8; border-color: #0284c7; color: #0f172a; }
+
+    /* 5. Main SAP Screen Canvas */
+    .sap-canvas {
+      background: var(--sap-canvas);
+      padding: 15px;
+      min-height: 460px;
+      max-height: 560px;
+      overflow-y: auto;
+    }
+
+    .sap-subscreen-header {
+      background: #d8e5f3;
+      border: 1px solid #9ab0c7;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #0b386b;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sap-box {
+      background: #fbfdff;
+      border: 1px solid #9ab0c7;
+      border-radius: 3px;
+      padding: 14px 12px 10px 12px;
+      margin-bottom: 14px;
+      position: relative;
+    }
+    .sap-box-title {
+      position: absolute;
+      top: -9px;
+      left: 10px;
+      background: #fbfdff;
+      padding: 0 6px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #2b547e;
+    }
+
+    .sap-field-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      gap: 8px;
+      font-size: 12px;
+      flex-wrap: wrap;
+    }
+    .sap-label {
+      width: 155px;
+      text-align: right;
+      color: #334155;
+      font-weight: 600;
+    }
+    .sap-field {
+      padding: 3px 6px;
+      border: 1px solid #6c8dae;
+      font-size: 12px;
+      background: #fff;
+      font-family: Consolas, monospace;
+    }
+    .sap-field:focus { background: var(--sap-focus); outline: 1px solid #ca8a04; }
+    .sap-field[readonly] { background: #e2e8f0; color: #475569; }
+
+    .sap-hint-arrow {
+      direction: rtl;
+      background: #fef9c3;
+      border: 1px solid #facc15;
+      color: #854d0e;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+
+    /* Easy Access Tree */
+    .sap-tree-item {
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sap-tree-item:hover { background: #dbeafe; color: #1e40af; font-weight: bold; }
+
+    /* ALV Grid Table */
+    .sap-alv {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      background: #fff;
+      border: 1px solid #7f9db9;
+    }
+    .sap-alv th {
+      background: #d8e5f3;
+      border: 1px solid #8ba4be;
+      padding: 5px 8px;
+      text-align: left;
+      color: #0f172a;
+    }
+    .sap-alv td {
+      border: 1px solid #cbd5e1;
+      padding: 4px 8px;
+      font-family: Consolas, monospace;
+    }
+    .sap-alv tr:nth-child(even) { background: #f8fafc; }
+    .sap-alv tr:hover { background: #fef9c3; }
+
+    /* MIGO Tabs */
+    .migo-tabs {
+      display: flex;
+      gap: 3px;
+      border-bottom: 1px solid #7f9db9;
+      margin-bottom: 10px;
+    }
+    .migo-tab {
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: bold;
+      background: #d8e5f3;
+      border: 1px solid #7f9db9;
+      border-bottom: none;
+      cursor: pointer;
+    }
+    .migo-tab.active { background: #fbfdff; color: #0284c7; }
+
+    /* 6. SAP Status Bar */
+    .sap-statusbar {
+      background: #dce6f2;
+      border-top: 1px solid #8ba4be;
+      padding: 5px 12px;
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .status-msg { display: flex; align-items: center; gap: 6px; font-weight: bold; direction: rtl; }
+
+    /* ====================================================
+       SIDEBAR: GUIDE, STOCK MONITOR & SCENARIOS
+       ==================================================== */
+    .guide-card {
+      background: #fff;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .guide-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #0b4f6c;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 5px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .stock-pill-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .stock-pill {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 6px 8px;
+      border-radius: 5px;
+      font-size: 11px;
+    }
+    .stock-pill strong { display: block; font-size: 14px; font-family: monospace; }
+
+    .scen-btn {
+      width: 100%;
+      text-align: right;
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .scen-btn:hover { background: #e0f2fe; border-color: #0284c7; }
+
+    /* QCM Styles */
+    .qcm-card {
+      background: #fff;
+      max-width: 820px;
+      margin: 20px auto;
+      padding: 24px;
+      border-radius: 8px;
+    }
+    .qcm-opt {
+      width: 100%;
+      text-align: right;
+      padding: 11px 14px;
+      margin-bottom: 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #f8fafc;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .qcm-opt.correct { background: #dcfce7; border-color: #16a34a; color: #14532d; font-weight: bold; }
+    .qcm-opt.wrong { background: #fee2e2; border-color: #dc2626; color: #7f1d1d; }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <div class="academy-bar">
+    <div>
+      <h2 style="font-size: 17px;">🏢 SAP GUI 7.70 Real Multi-Screen Simulator</h2>
+      <p style="font-size: 11px; opacity: 0.9;">الشاشة الأولى (Selection/Header)  اضغط Enter أو F8  الشاشة الثانية (Overview/ALV/Post)</p>
+    </div>
+    <div class="academy-tabs">
+      <button class="acad-btn active" onclick="switchMainView('sim', this)">🖥️ محاكي SAP الحقيقي</button>
+      <button class="acad-btn" onclick="switchMainView('flows', this)">📐 مخطط العمليات والأسهم</button>
+      <button class="acad-btn" onclick="switchMainView('qcm', this)">📝 اختبار QCM</button>
+    </div>
+  </div>
+
+  <div class="main-wrapper">
+
+    <!-- ==========================================================
+         VIEW 1: REAL MULTI-SCREEN SAP SIMULATOR
+         ========================================================== -->
+    <div id="view-sim" class="view-section active">
+      <div class="sim-grid">
+
+        <!-- SAP GUI WINDOW -->
+        <div class="sap-window">
+          <!-- Titlebar -->
+          <div class="sap-win-header">
+            <span id="sap-title-text">SAP Easy Access - User Menu</span>
+            <span style="font-family: monospace;">SAP_PRD [Client 400]</span>
+          </div>
+
+          <!-- Menubar -->
+          <div class="sap-menubar">
+            <span onclick="goEasyAccess()">Menu</span>
+            <span onclick="pressEnterOrExecute()">Edit</span>
+            <span onclick="goEasyAccess()">Favorites</span>
+            <span>Extras</span>
+            <span>System</span>
+            <span>Help</span>
+          </div>
+
+          <!-- Standard Toolbar -->
+          <div class="sap-std-toolbar">
+            <button class="sap-enter-btn" onclick="handleCommandOrEnter()" title="Enter (الانتقال للمرحلة التالية أو تشغيل T-Code)">✔</button>
+            <input type="text" id="sap-okcode" class="sap-okcode" placeholder="T-Code /n..." onkeydown="if(event.key==='Enter') handleCommandOrEnter()" />
+            <button class="sap-icon-btn" onclick="handlePostOrSave()" title="Save / Post (Ctrl+S)">💾 Save</button>
+            <button class="sap-icon-btn" onclick="handleBackF3()" title="Back (F3) - رجوع للشاشة السابقة">⬅ Back (F3)</button>
+            <button class="sap-icon-btn" onclick="goEasyAccess()" title="Exit (Shift+F3) - خروج للقائمة الرئيسية">🔼 Exit</button>
+            <button class="sap-icon-btn" onclick="handleBackF3()" title="Cancel (F12)">✖ Cancel</button>
+
+            <select id="tcode-selector" onchange="startTransaction(this.value)" style="margin-left: auto; padding: 3px 6px; font-size: 12px; font-weight: bold;">
+              <option value="SESSION_MANAGER">-- القائمة الرئيسية (SAP Easy Access) --</option>
+              <option value="MIGO">MIGO - Goods Movement (101/344/343/311)</option>
+              <option value="MMBE">MMBE - Stock Overview</option>
+              <option value="MB51">MB51 - Material Document List</option>
+              <option value="MB5T">MB5T - Stock in Transit</option>
+              <option value="VL06O">VL06O - Outbound Delivery Monitor</option>
+              <option value="VL06P">VL06P - Deliveries for Picking</option>
+              <option value="VL06C">VL06C - Inbound Delivery Monitor</option>
+              <option value="VT01N">VT01N - Create Shipment</option>
+              <option value="LS24">LS24 - Display Quants / Bins (WM)</option>
+              <option value="LX02">LX02 - WM Stock Inventory List</option>
+              <option value="LX03">LX03 - Bin Status Report (WM)</option>
+              <option value="LT24">LT24 - Transfer Orders by Material</option>
+              <option value="ME21N">ME21N - Create Purchase Order</option>
+              <option value="MIRO">MIRO - Enter Incoming Invoice</option>
+            </select>
+          </div>
+
+          <!-- Application Toolbar (Dynamic per screen & step) -->
+          <div class="sap-app-toolbar" id="sap-app-bar"></div>
+
+          <!-- Main Screen Viewport -->
+          <div class="sap-canvas" id="sap-canvas"></div>
+
+          <!-- Status Bar -->
+          <div class="sap-statusbar">
+            <div class="status-msg" id="sap-status-msg">🟢 Ready - اكتب الـ T-Code واضغط Enter.</div>
+            <div style="font-family: monospace; font-size: 11px;">
+              <span id="sap-status-tcode">SESSION_MANAGER</span> | <span id="sap-status-step">Screen 1000</span> | INS
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT SIDEBAR: LIVE STOCK & GUIDED INSTRUCTIONS -->
+        <div>
+          <!-- Live Stock Monitor -->
+          <div class="guide-card">
+            <div class="guide-title">
+              <span>📊 رصيد المخزون الحي (MAT-10029)</span>
+              <span style="font-size: 11px; color: #0284c7;">Plant 1000</span>
+            </div>
+            <div class="stock-pill-grid">
+              <div class="stock-pill" style="border-right: 3px solid #16a34a;">
+                Unrestricted (حر متاح)
+                <strong id="live-unres" style="color: #15803d;">1200 PC</strong>
+              </div>
+              <div class="stock-pill" style="border-right: 3px solid #dc2626;">
+                Blocked (محجوز 344)
+                <strong id="live-block" style="color: #b91c1c;">100 PC</strong>
+              </div>
+              <div class="stock-pill" style="border-right: 3px solid #0284c7;">
+                Quality Insp. (فحص 321)
+                <strong id="live-qual" style="color: #0369a1;">150 PC</strong>
+              </div>
+              <div class="stock-pill" style="border-right: 3px solid #d97706;">
+                In Transit (في الطريق MB5T)
+                <strong id="live-trans" style="color: #b45309;">300 PC</strong>
+              </div>
+            </div>
+            <div style="font-size: 11px; color: #475569; display: flex; justify-content: space-between; background: #f1f5f9; padding: 4px 8px; border-radius: 4px;">
+              <span>مستودع 0001: <b id="live-loc1">950 PC</b></span>
+              <span>مستودع 0002: <b id="live-loc2">250 PC</b></span>
+            </div>
+          </div>
+
+          <!-- Step-by-Step Guide for Current Screen -->
+          <div class="guide-card" style="background: #fffbeb; border-color: #fde047;">
+            <div class="guide-title" style="color: #854d0e; border-color: #fef08a;">
+              <span>🧭 خطوات العمل على الشاشة الحالية</span>
+            </div>
+            <div id="step-guide-box" style="font-size: 12px; color: #713f12; line-height: 1.6;"></div>
+          </div>
+
+          <!-- Quick Practice Scenarios -->
+          <div class="guide-card">
+            <div class="guide-title"><span>⚡ تمارين تطبيقية (تفتح الواجهة 1)</span></div>
+            <button class="scen-btn" onclick="loadMigoPreset('A08','344',50)">
+              <strong>1. حجز بضاعة معطوبة (MIGO - 344)</strong>
+              يفتح الواجهة 1  اضغط Enter لفتح تفاصيل السطر  Check  Post.
+            </button>
+            <button class="scen-btn" onclick="loadMigoPreset('A08','343',50)">
+              <strong>2. فك الحظر عن بضاعة (MIGO - 343)</strong>
+              إرجاع 50 قطعة من الرصيد المسدود (Blocked) إلى الرصيد المتاح.
+            </button>
+            <button class="scen-btn" onclick="loadMigoPreset('A08','311',100)">
+              <strong>3. تحويل بين مستودعين (MIGO - 311)</strong>
+              نقل 100 قطعة من المستودع 0001 إلى المستودع 0002.
+            </button>
+            <button class="scen-btn" onclick="loadMigoPreset('A01','101',500)">
+              <strong>4. استلام أمر شراء (MIGO - 101)</strong>
+              إدخال شحنة من المورد ضد أمر الشراء 4500018920.
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==========================================================
+         VIEW 2: VISUAL FLOWS & ARROWS (A TO Z)
+         ========================================================== -->
+    <div id="view-flows" class="view-section">
+      <div class="guide-card" style="padding: 20px;">
+        <h3 style="color: #0b4f6c; margin-bottom: 12px;">📐 مخطط تسلسل الشاشات والعمليات بالأسهم (من A إلى Z)</h3>
+        <p style="font-size: 13px; margin-bottom: 15px;">هكذا تترابط المعاملات الـ 12 في بيئة العمل الحقيقية داخل المصنع والمستودع:</p>
+
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; line-height: 2;">
+          <strong>1️⃣ مسار مراقبة المخزون وحركات الجودة والحظر:</strong><br>
+          <span style="background:#0f172a;color:#38bdf8;padding:3px 8px;border-radius:4px;font-family:monospace;">MMBE (واجهة 1: إدخال المادة ➔ F8 ➔ واجهة 2: شجرة الرصيد)</span>
+          ⬅️ اكتشاف عطب ⬅️
+          <span style="background:#991b1b;color:#fff;padding:3px 8px;border-radius:4px;font-family:monospace;">MIGO 344 (واجهة 1: كود المادة ➔ Enter ➔ واجهة 2: الكمية + Item OK + Check + Post)</span>
+          ⬅️ إصلاح العطب ⬅️
+          <span style="background:#166534;color:#fff;padding:3px 8px;border-radius:4px;font-family:monospace;">MIGO 343 (فك الحظر)</span>
+          ⬅️ مراجعة الأرشيف ⬅️
+          <span style="background:#0f172a;color:#38bdf8;padding:3px 8px;border-radius:4px;font-family:monospace;">MB51 (واجهة 1 ➔ F8 ➔ سجل الحركات)</span>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 15px; border-radius: 6px; font-size: 13px; line-height: 2;">
+          <strong>2️⃣ مسار المستودع والرفوف والشحن (WM & Shipping):</strong><br>
+          <span style="background:#0f172a;color:#38bdf8;padding:3px 8px;border-radius:4px;font-family:monospace;">VL06O / VL06P (واجهة 1: محطة الشحن ➔ F8 ➔ واجهة 2: لائحة الطلبيات للـ Picking)</span>
+          ⬅️ البحث عن مكان السلعة في الرفوف ⬅️
+          <span style="background:#0369a1;color:#fff;padding:3px 8px;border-radius:4px;font-family:monospace;">LS24 / LX02 / LX03 (واجهة 1: رقم المخزن W01 ➔ F8 ➔ واجهة 2: أرقام الـ Bins)</span>
+          ⬅️ تأكيد أمر النقل ⬅️
+          <span style="background:#0369a1;color:#fff;padding:3px 8px;border-radius:4px;font-family:monospace;">LT24 (واجهة 1 ➔ F8 ➔ تأكيد الـ TO)</span>
+          ⬅️ شحن في الشاحنة ⬅️
+          <span style="background:#1e293b;color:#facc15;padding:3px 8px;border-radius:4px;font-family:monospace;">VT01N (واجهة 1 ➔ Enter ➔ واجهة 2: ربط الشاحنة والمسار + Save)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================================
+         VIEW 3: FIXED INTERACTIVE QCM
+         ========================================================== -->
+    <div id="view-qcm" class="view-section">
+      <div class="qcm-card" id="qcm-container"></div>
+    </div>
+
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. LIVE ERP DATABASE (Updates dynamically when MIGO is posted)
+    // =========================================================================
+    const erpDB = {
+      material: "MAT-10029",
+      desc: "Display Assembly OLED 6.7 Pro",
+      plant: "1000",
+      unrestricted: 1200,
+      blocked: 100,
+      quality: 150,
+      transit: 300,
+      loc0001: 950,
+      loc0002: 250,
+      matDocs: [
+        { doc: "5000049100", date: "29.10.2026", bwart: "101", qty: "+500", sloc: "0001", text: "GR for PO 4500018920" },
+        { doc: "5000049105", date: "29.10.2026", bwart: "344", qty: "50", sloc: "0001", text: "Transfer Unrestr. -> Blocked" },
+        { doc: "5000049112", date: "29.10.2026", bwart: "311", qty: "100", sloc: "0002", text: "SLoc Transfer 0001 -> 0002" }
+      ]
+    };
+
+    function refreshLiveStockSidebar() {
+      document.getElementById("live-unres").innerText = erpDB.unrestricted + " PC";
+      document.getElementById("live-block").innerText = erpDB.blocked + " PC";
+      document.getElementById("live-qual").innerText = erpDB.quality + " PC";
+      document.getElementById("live-trans").innerText = erpDB.transit + " PC";
+      document.getElementById("live-loc1").innerText = erpDB.loc0001 + " PC";
+      document.getElementById("live-loc2").innerText = erpDB.loc0002 + " PC";
+    }
+
+    // =========================================================================
+    // 2. STATE MACHINE FOR MULTI-SCREEN SAP GUI
+    // =========================================================================
+    let state = {
+      tcode: "SESSION_MANAGER",
+      step: 1, // 1 = Initial/Selection Screen, 2 = Detail/Overview/ALV Screen
+      migo: {
+        action: "A08",
+        ref: "R10",
+        bwart: "344",
+        mat: "MAT-10029",
+        po: "4500018920",
+        qty: 50,
+        plant: "1000",
+        sloc: "0001",
+        destSloc: "0002",
+        tab: "qty",
+        itemOk: false,
+        checked: false
+      }
+    };
+
+    function setStatus(type, text) {
+      const el = document.getElementById("sap-status-msg");
+      const icon = type === "E" ? "🔴 [Error]" : type === "W" ? "🟡 [Warning]" : "🟢 [Success]";
+      const color = type === "E" ? "#b91c1c" : type === "W" ? "#b45309" : "#15803d";
+      el.style.color = color;
+      el.innerHTML = `${icon} ${text}`;
+    }
+
+    function setGuide(html) {
+      document.getElementById("step-guide-box").innerHTML = html;
+    }
+
+    // =========================================================================
+    // 3. COMMAND FIELD, ENTER, F8, AND F3 HANDLERS
+    // =========================================================================
+    function handleCommandOrEnter() {
+      const cmdInput = document.getElementById("sap-okcode");
+      const raw = cmdInput.value.trim().toUpperCase();
+
+      if (raw !== "") {
+        cmdInput.value = "";
+        if (raw === "/N" || raw === "SESSION_MANAGER") {
+          goEasyAccess();
+          return;
+        }
+        const cleanCode = raw.startsWith("/N") ? raw.substring(2) : raw;
+        startTransaction(cleanCode);
+        return;
+      }
+
+      // If Command Field is empty, Enter acts as SAP Continue / Execute to Step 2
+      pressEnterOrExecute();
+    }
+
+    function startTransaction(tcode) {
+      const valid = ["SESSION_MANAGER","MIGO","MMBE","MB51","MB5T","VL06O","VL06P","VL06C","VT01N","LS24","LX02","LX03","LT24","ME21N","MIRO"];
+      if (!valid.includes(tcode)) {
+        setStatus("E", `Transaction ${tcode} does not exist.`);
+        return;
+      }
+      state.tcode = tcode;
+      state.step = 1;
+      state.migo.checked = false;
+      document.getElementById("tcode-selector").value = tcode;
+      renderCurrentScreen();
+      setStatus("S", `تم فتح الواجهة الأولى لمعاملة ${tcode}. أدخل المعطيات واضغط Enter أو F8.`);
+    }
+
+    function goEasyAccess() {
+      startTransaction("SESSION_MANAGER");
+    }
+
+    function pressEnterOrExecute() {
+      if (state.tcode === "SESSION_MANAGER") {
+        setStatus("W", "اختر معاملة من الشجرة أو اكتب رمز الـ T-Code في الحقل العلوي واضغط Enter.");
+        return;
+      }
+      if (state.step === 1) {
+        // Save inputs if on MIGO Step 1 before moving to Step 2
+        if (state.tcode === "MIGO") {
+          const actEl = document.getElementById("migo-act");
+          const bwEl = document.getElementById("migo-bwart");
+          if (actEl) state.migo.action = actEl.value;
+          if (bwEl) state.migo.bwart = bwEl.value;
+        }
+        state.step = 2;
+        renderCurrentScreen();
+        setStatus("S", `تم الانتقال إلى الواجهة الثانية (Screen 2000) لمعاملة ${state.tcode}.`);
+      } else {
+        // Already on Step 2
+        if (state.tcode === "MIGO") {
+          migoCheckDocument();
+        } else {
+          setStatus("S", `البيانات محدثة على شاشة النتائج لـ ${state.tcode}. اضغط Back (F3) للرجوع للواجهة الأولى.`);
+        }
+      }
+    }
+
+    function handleBackF3() {
+      if (state.step === 2) {
+        state.step = 1;
+        renderCurrentScreen();
+        setStatus("S", `تم الرجوع إلى الواجهة الأولى (Selection Screen) لمعاملة ${state.tcode}.`);
+      } else {
+        goEasyAccess();
+      }
+    }
+
+    function handlePostOrSave() {
+      if (state.tcode === "MIGO") {
+        migoPostDocument();
+      } else if (["ME21N","MIRO","VT01N"].includes(state.tcode) && state.step === 2) {
+        const docId = Math.floor(4500090000 + Math.random() * 9000);
+        setStatus("S", `Document ${docId} saved successfully in SAP Database!`);
+        state.step = 1;
+        renderCurrentScreen();
+      } else {
+        setStatus("W", "انتقل أولاً للواجهة الثانية عبر Enter أو F8 قبل الحفظ.");
+      }
+    }
+
+    // =========================================================================
+    // 4. MIGO SPECIFIC LOGIC (STEP 1 -> STEP 2 -> CHECK -> POST)
+    // =========================================================================
+    function loadMigoPreset(action, bwart, qty) {
+      state.tcode = "MIGO";
+      state.step = 1;
+      state.migo.action = action;
+      state.migo.bwart = bwart;
+      state.migo.qty = qty;
+      state.migo.itemOk = false;
+      state.migo.checked = false;
+      document.getElementById("tcode-selector").value = "MIGO";
+      renderCurrentScreen();
+      setStatus("S", `تم تجهيز الواجهة الأولى لـ MIGO (حركة ${bwart}). اضغط Enter أو F8 لفتح تفاصيل السطر!`);
+    }
+
+    function migoCheckDocument() {
+      if (state.step === 1) {
+        setStatus("W", "اضغط Enter أولاً لفتح الواجهة الثانية (تفاصيل الكمية والمستودع) قبل عمل Check!");
+        return false;
+      }
+      const qtyEl = document.getElementById("migo-qty-input");
+      const okEl = document.getElementById("migo-ok-chk");
+      if (qtyEl) state.migo.qty = parseInt(qtyEl.value, 10) || 0;
+      if (okEl) state.migo.itemOk = okEl.checked;
+
+      if (state.migo.qty <= 0) {
+        setStatus("E", "خطأ: يرجى إدخال كمية أكبر من الصفر في حقل Quantity.");
+        return false;
+      }
+      if (!state.migo.itemOk) {
+        setStatus("E", "خطأ SAP MIGO: يجب التعليم على خانة [Item OK] في أسفل الشاشة قبل الترحيل!");
+        return false;
+      }
+      state.migo.checked = true;
+      setStatus("S", "Document is OK (الضوء الأخضر 🟢) - يمكنك الآن الضغط على زر Post لترحيل الحركة.");
+      return true;
+    }
+
+    function migoPostDocument() {
+      if (!migoCheckDocument()) return;
+
+      const q = state.migo.qty;
+      const bw = state.migo.bwart;
+
+      if (bw === "344") {
+        if (erpDB.unrestricted < q) { setStatus("E", `Deficit of SL Unrestricted-use ${q} PC!`); return; }
+        erpDB.unrestricted -= q;
+        erpDB.blocked += q;
+        erpDB.loc0001 -= q;
+      } else if (bw === "343") {
+        if (erpDB.blocked < q) { setStatus("E", `Deficit of Blocked Stock ${q} PC!`); return; }
+        erpDB.blocked -= q;
+        erpDB.unrestricted += q;
+        erpDB.loc0001 += q;
+      } else if (bw === "311") {
+        if (erpDB.loc0001 < q) { setStatus("E", `Deficit of Stock in SLoc 0001!`); return; }
+        erpDB.loc0001 -= q;
+        erpDB.loc0002 += q;
+      } else if (bw === "321") {
+        if (erpDB.quality < q) { setStatus("E", `Deficit of Quality Inspection Stock!`); return; }
+        erpDB.quality -= q;
+        erpDB.unrestricted += q;
+      } else if (bw === "101") {
+        erpDB.unrestricted += q;
+        erpDB.loc0001 += q;
+      }
+
+      const newDoc = "50000" + Math.floor(50000 + Math.random() * 49000);
+      erpDB.matDocs.unshift({
+        doc: newDoc,
+        date: "29.10.2026",
+        bwart: bw,
+        qty: (bw === "101" ? "+" : "") + q,
+        sloc: state.migo.sloc,
+        text: `MIGO Movement ${bw} Posted`
+      });
+
+      refreshLiveStockSidebar();
+      state.step = 1; // Return to initial MIGO screen just like real SAP after Post
+      state.migo.itemOk = false;
+      state.migo.checked = false;
+      renderCurrentScreen();
+      setStatus("S", `Material Document ${newDoc} posted! (تم تحديث الرصيد في MMBE و MB51).`);
+    }
+
+    // =========================================================================
+    // 5. MASTER RENDERER FOR ALL 14 TRANSACTIONS (STEP 1 & STEP 2)
+    // =========================================================================
+    function renderCurrentScreen() {
+      const titleEl = document.getElementById("sap-title-text");
+      const appBar = document.getElementById("sap-app-bar");
+      const canvas = document.getElementById("sap-canvas");
+      document.getElementById("sap-status-tcode").innerText = state.tcode;
+      document.getElementById("sap-status-step").innerText = state.step === 1 ? "Screen 1000 (Initial)" : "Screen 2000 (Output/Detail)";
+
+      // 1. SAP EASY ACCESS MENU
+      if (state.tcode === "SESSION_MANAGER") {
+        titleEl.innerText = "SAP Easy Access - Logistics & Materials Management";
+        appBar.innerHTML = `<span style="font-size:11px; color:#334155;">انقر مرتين على أي معاملة لفتح الواجهة الأولى الخاصة بها:</span>`;
+        canvas.innerHTML = `
+          <div class="sap-subscreen-header">
+            <span>📁 SAP Menu Tree (Logistics ➔ Materials Management & Warehouse)</span>
+          </div>
+          <div class="sap-box">
+            <span class="sap-box-title">Favorites & Core Logistics Transactions</span>
+            <div class="sap-tree-item" onclick="startTransaction('MIGO')">📦 <b>MIGO</b> - Goods Movement (101, 344 Block, 343 Unblock, 311 Transfer, 321 Quality)</div>
+            <div class="sap-tree-item" onclick="startTransaction('MMBE')">📊 <b>MMBE</b> - Stock Overview (Company Code / Plant / SLoc / Batch)</div>
+            <div class="sap-tree-item" onclick="startTransaction('MB51')">📜 <b>MB51</b> - Material Document List (Historique des Mouvements)</div>
+            <div class="sap-tree-item" onclick="startTransaction('MB5T')">🚚 <b>MB5T</b> - Display Stock in Transit (Cross-Plant)</div>
+            <hr style="margin:6px 0; border:0; border-top:1px solid #cbd5e1;">
+            <div class="sap-tree-item" onclick="startTransaction('VL06O')">📤 <b>VL06O</b> - Outbound Delivery Monitor</div>
+            <div class="sap-tree-item" onclick="startTransaction('VL06P')">🛒 <b>VL06P</b> - Outbound Deliveries for Picking</div>
+            <div class="sap-tree-item" onclick="startTransaction('VL06C')">📥 <b>VL06C</b> - Confirm Inbound Deliveries</div>
+            <div class="sap-tree-item" onclick="startTransaction('VT01N')">🚛 <b>VT01N</b> - Create Shipment (Transport)</div>
+            <hr style="margin:6px 0; border:0; border-top:1px solid #cbd5e1;">
+            <div class="sap-tree-item" onclick="startTransaction('LS24')">📍 <b>LS24</b> - Display Quants for Material (Exact Storage Bin)</div>
+            <div class="sap-tree-item" onclick="startTransaction('LX02')">📋 <b>LX02</b> - Stock List for Warehouse Management</div>
+            <div class="sap-tree-item" onclick="startTransaction('LX03')">🗺️ <b>LX03</b> - Bin Status Report (Racks Map)</div>
+            <div class="sap-tree-item" onclick="startTransaction('LT24')">🔄 <b>LT24</b> - Display Transfer Orders by Material</div>
+            <hr style="margin:6px 0; border:0; border-top:1px solid #cbd5e1;">
+            <div class="sap-tree-item" onclick="startTransaction('ME21N')">📝 <b>ME21N</b> - Create Purchase Order</div>
+            <div class="sap-tree-item" onclick="startTransaction('MIRO')">🧾 <b>MIRO</b> - Enter Incoming Invoice (3-Way Match)</div>
+          </div>
+        `;
+        setGuide(`<b>أنت في الشاشة الرئيسية:</b><br>[1] ➔ اكتب رمز المعاملة في الحقل العلوي (مثلاً <code>MMBE</code> أو <code>MIGO</code>) واضغط <b>Enter</b>.<br>[2] ➔ أو انقر مباشرة على أي معاملة من الشجرة.`);
+        return;
+      }
+
+      // 2. MIGO (2-STEP INTERACTIVE TRANSACTION)
+      if (state.tcode === "MIGO") {
+        titleEl.innerText = `MIGO - Goods Movement (${state.step === 1 ? 'Initial Header Screen' : 'Item Detail & Posting Screen'})`;
+        appBar.innerHTML = `
+          <button class="sap-app-btn exec" onclick="pressEnterOrExecute()">✔ Enter / Pull Data</button>
+          <button class="sap-app-btn check" onclick="migoCheckDocument()">🔍 Check (F7)</button>
+          <button class="sap-app-btn post" onclick="migoPostDocument()">💾 Post (Ctrl+S)</button>
+          <button class="sap-app-btn" onclick="setStatus('W','Document Held Temporarily.')">⏸ Hold</button>
+        `;
+
+        if (state.step === 1) {
+          canvas.innerHTML = `
+            <div class="sap-subscreen-header">
+              <span>الواجهة 1: تحديد نوع العملية، نوع الحركة (Movement Type)، والمرجع</span>
+              <span style="color:#b45309;">Step 1 of 2 (اضغط Enter للمتابعة)</span>
+            </div>
+            <div class="sap-box">
+              <span class="sap-box-title">1. Action & Movement Type Header</span>
+              <div class="sap-field-row">
+                <span class="sap-label">Action / Operation:</span>
+                <select id="migo-act" class="sap-field" style="width:210px; font-weight:bold;">
+                  <option value="A08" ${state.migo.action==='A08'?'selected':''}>A08 Transfer Posting (تحويل/حظر)</option>
+                  <option value="A01" ${state.migo.action==='A01'?'selected':''}>A01 Goods Receipt (استلام)</option>
+                  <option value="A07" ${state.migo.action==='A07'?'selected':''}>A07 Goods Issue (صرف)</option>
+                </select>
+                <span class="sap-hint-arrow">[1] ➔ اختر A08 للتحويلات أو A01 للاستلام</span>
+              </div>
+              <div class="sap-field-row">
+                <span class="sap-label">Movement Type:</span>
+                <select id="migo-bwart" class="sap-field" style="width:280px; font-weight:bold; background:#fef9c3;">
+                  <option value="344" ${state.migo.bwart==='344'?'selected':''}>344 - Transfer Unrestr. to Blocked (حجز تالف)</option>
+                  <option value="343" ${state.migo.bwart==='343'?'selected':''}>343 - Transfer Blocked to Unrestr. (فك الحظر)</option>
+                  <option value="311" ${state.migo.bwart==='311'?'selected':''}>311 - Transfer SLoc to SLoc (نقل بين مستودعين)</option>
+                  <option value="321" ${state.migo.bwart==='321'?'selected':''}>321 - Quality to Unrestricted (إفراج جودة)</option>
+                  <option value="101" ${state.migo.bwart==='101'?'selected':''}>101 - Goods Receipt for PO (استلام أمر شراء)</option>
+                </select>
+                <span class="sap-hint-arrow">[2] ➔ حدد رمز الحركة (344 أو 343 أو 311 أو 101)</span>
+              </div>
+              <div class="sap-field-row">
+                <span class="sap-label">Material / PO Ref:</span>
+                <input type="text" class="sap-field" value="${state.migo.mat}" style="width:130px; font-weight:bold;" />
+                <input type="text" class="sap-field" value="PO: ${state.migo.po}" style="width:140px;" />
+                <span class="sap-hint-arrow">[3] ➔ الآن اضغط <b>Enter</b> أو <b>F8</b> لفتح الواجهة الثانية!</span>
+              </div>
+            </div>
+          `;
+          setGuide(`<b>MIGO - الواجهة الأولى:</b><br>[1] ➔ اختر الحركة (مثلاً <code>344</code> لحجز التالف أو <code>343</code> لفك الحجز).<br>[2] ➔ اضغط زر <b>Enter (✔)</b> أو <b>F8</b> لتوليد جدول السطور والانتقال للواجهة الثانية.`);
+        } else {
+          // MIGO STEP 2: Line Item Details, Check & Post
+          canvas.innerHTML = `
+            <div class="sap-subscreen-header">
+              <span>الواجهة 2: إدخال الكمية والمستودع وتأكيد Item OK (حركة ${state.migo.bwart})</span>
+              <span style="color:#15803d;">🟢 Data Pulled (Ready for Check & Post)</span>
+            </div>
+            <table class="sap-alv" style="margin-bottom:12px;">
+              <thead>
+                <tr><th>Line</th><th>Material</th><th>Description</th><th>Move Type</th><th>Plant</th><th>From SLoc</th><th>Dest SLoc</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td><b>${state.migo.mat}</b></td>
+                  <td>${erpDB.desc}</td>
+                  <td><b style="color:#0284c7;">${state.migo.bwart}</b></td>
+                  <td>1000</td>
+                  <td>0001</td>
+                  <td>${state.migo.bwart==='311' ? '0002' : '0001'}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="sap-box">
+              <span class="sap-box-title">Detail Data Tabs (Quantity & Where)</span>
+              <div class="sap-field-row">
+                <span class="sap-label">Quantity in Unit:</span>
+                <input type="number" id="migo-qty-input" class="sap-field" value="${state.migo.qty}" style="width:100px; font-weight:bold;" />
+                <b>PC</b>
+                <span class="sap-hint-arrow">[1] ➔ حدد الكمية المراد تحريكها</span>
+              </div>
+              <div class="sap-field-row">
+                <span class="sap-label">Plant / Storage Loc:</span>
+                <input type="text" class="sap-field" value="1000 (Tangier)" style="width:120px;" readonly />
+                <input type="text" class="sap-field" value="0001" style="width:70px;" />
+                ${state.migo.bwart==='311' ? `<span>➔ Dest SLoc: <input type="text" class="sap-field" value="0002" style="width:70px;font-weight:bold;"/></span>` : ''}
+              </div>
+              <div class="sap-field-row" style="background:#dcfce7; padding:8px; border-radius:4px; border:1px solid #22c55e;">
+                <span class="sap-label" style="color:#14532d; font-weight:bold;">Item OK [x]:</span>
+                <input type="checkbox" id="migo-ok-chk" ${state.migo.itemOk?'checked':''} style="width:18px; height:18px; cursor:pointer;" />
+                <span class="sap-hint-arrow">[2] ➔ علم على Item OK ثم اضغط <b>Check (F7)</b> ثم <b>Post</b>!</span>
+              </div>
+            </div>
+          `;
+          setGuide(`<b>MIGO - الواجهة الثانية:</b><br>[1] ➔ أدخل الكمية.<br>[2] ➔ ضع علامة صح على <b>Item OK</b>.<br>[3] ➔ اضغط <b>Check (F7)</b> ثم اضغط <b>Post</b> لترحيل المستند.`);
+        }
+        return;
+      }
+
+      // 3. OTHER 13 TRANSACTIONS (STEP 1 SELECTION -> F8/ENTER -> STEP 2 OUTPUT)
+      const tcodeSpecs = {
+        MMBE: {
+          name: "MMBE - Stock Overview",
+          s1Fields: [
+            { label: "Material", val: "MAT-10029", hint: "[1] ➔ رقم المادة" },
+            { label: "Plant", val: "1000", hint: "[2] ➔ كود المصنع" },
+            { label: "Storage Location", val: "0001 to 0002", hint: "[3] ➔ اضغط F8 أو Enter لعرض شجرة المخزون" }
+          ],
+          s2Html: () => `
+            <table class="sap-alv">
+              <thead><tr><th>Hierarchy Level</th><th>Unrestricted (حر)</th><th>Quality Insp.</th><th>Blocked (محجوز 344)</th><th>In Transit</th></tr></thead>
+              <tbody>
+                <tr style="font-weight:bold;background:#e2e8f0;"><td>🏢 Client 400 / Company 1000</td><td>${erpDB.unrestricted}</td><td>${erpDB.quality}</td><td>${erpDB.blocked}</td><td>${erpDB.transit}</td></tr>
+                <tr style="font-weight:bold;"><td>🏭 Plant 1000 (Tangier)</td><td>${erpDB.unrestricted}</td><td>${erpDB.quality}</td><td>${erpDB.blocked}</td><td>${erpDB.transit}</td></tr>
+                <tr><td>└── 📦 SLoc 0001 (Main Store)</td><td>${erpDB.loc0001}</td><td>${erpDB.quality}</td><td>${erpDB.blocked}</td><td>0</td></tr>
+                <tr><td>└── 📦 SLoc 0002 (Picking Area)</td><td>${erpDB.loc0002}</td><td>0</td><td>0</td><td>0</td></tr>
+              </tbody>
+            </table>`
+        },
+        MB51: {
+          name: "MB51 - Material Document List",
+          s1Fields: [
+            { label: "Material", val: "MAT-10029", hint: "[1] ➔ رقم المادة" },
+            { label: "Plant", val: "1000", hint: "[2] ➔ المصنع" },
+            { label: "Movement Type", val: "All (101, 344, 343, 311)", hint: "[3] ➔ اضغط F8 لعرض الأرشيف" }
+          ],
+          s2Html: () => `
+            <table class="sap-alv">
+              <thead><tr><th>Mat. Doc</th><th>Posting Date</th><th>Move Type</th><th>Quantity</th><th>SLoc</th><th>Reference Text</th></tr></thead>
+              <tbody>
+                ${erpDB.matDocs.map(d => `<tr><td><b>${d.doc}</b></td><td>${d.date}</td><td><b>${d.bwart}</b></td><td>${d.qty} PC</td><td>${d.sloc}</td><td>${d.text}</td></tr>`).join("")}
+              </tbody>
+            </table>`
+        },
+        MB5T: {
+          name: "MB5T - Display Stock in Transit",
+          s1Fields: [
+            { label: "Receiving Plant", val: "1000", hint: "[1] ➔ المصنع المستقبل" },
+            { label: "Material", val: "MAT-10029", hint: "[2] ➔ اضغط F8 لعرض البضاعة التي في الطريق" }
+          ],
+          s2Html: () => `
+            <table class="sap-alv">
+              <thead><tr><th>Supplying Plant</th><th>Receiving Plant</th><th>STO Number</th><th>Material</th><th>Quantity in Transit</th><th>Unit</th></tr></thead>
+              <tbody>
+                <tr><td>2000 (Casablanca)</td><td>1000 (Tangier)</td><td><b>4500017840</b></td><td>MAT-10029</td><td><b style="color:#b45309;">${erpDB.transit}</b></td><td>PC</td></tr>
+              </tbody>
+            </table>`
+        },
+        VL06O: {
+          name: "VL06O - Outbound Delivery Monitor",
+          s1Fields: [
+            { label: "Shipping Point", val: "1000", hint: "[1] ➔ نقطة الشحن" },
+            { label: "Delivery Date", val: "29.10.2026", hint: "[2] ➔ اضغط F8 لعرض لوحة الشحنات" }
+          ],
+          s2Html: () => `
+            <table class="sap-alv">
+              <thead><tr><th>Delivery No</th><th>Customer</th><th>Shipping Pt</th><th>Pick Status</th><th>GI Status</th></tr></thead>
+              <tbody>
+                <tr><td><b>80014590</b></td><td>CUST-TNG-01</td><td>1000</td><td>C (Completed)</td><td>Posted</td></tr>
+                <tr><td><b>80014591</b></td><td>CUST-CAS-02</td><td>1000</td><td>A (Open for Pick)</td><td>Pending</td></tr>
+              </tbody>
+            </table>`
+        },
+        VL06P: {
+          name: "VL06P - Outbound Deliveries for Picking",
+          s1Fields: [
+            { label: "Shipping Point", val: "1000", hint: "[1] ➔ مركز الشحن" },
+            { label: "Picking Date", val: "29.10.2026", hint: "[2] ➔ اضغط F8 لاستخراج طلبيات البيكينغ" }
+          ],
+          s2Html: () => `
+            <table class="sap-alv">
+              <thead><tr><th>Delivery No</th><th>Material</th><th>Pick Qty</th><th>Source Bin</th><th>WM Status</th></tr></thead>
+              <tbody>
+                <tr><td><b>80014591</b></td><td>MAT-10029</td><td>80 PC</td><td>01-04-B2</td><td>Ready for TO Creation</td></tr>
+              </tbody>
+            </table>`
+        },
+        VL06C: {
+          name: "VL06C - Inbound Deliveries for Confirmation",
+          s1Fields: [
+            { label: "Receiving Point", val: "1000", hint: "[1] ➔ نقطة الاستلام" },
+            { label: "Delivery Date", val: "29.10.2026", hint: "[2] ➔ اضغط F8 لعرض الشحنات الواردة" }
+          ],
+          s2Html: () => `
+            <table class="sap-alv">
+              <thead><tr><th>Inbound Delivery</th><th>Vendor</th><th>Material</th><th>Expected Qty</th><th>Putaway Status</th></tr></thead>
+              <tbody>
+                <tr><td><b>18000551</b></td><td>V-400192</td><td>MAT-10029</td><td>500 PC</td><td>Awaiting Unloading</td></tr>
+              </tbody>
+            </table>`
+        },
+        VT01N: {
+          name: "VT01N - Create Shipment",
+          s1Fields: [
+            { label: "Transport Plan Pt", val: "1000", hint: "[1] ➔ نقطة تخطيط النقل" },
+            { label: "Shipment Type", val: "0001 (Road Truck)", hint: "[2] ➔ اضغط Enter أو F8 لتعيين السائق والشاحنة" }
+          ],
+          s2Html: () => `
+            <div class="sap-box">
+              <span class="sap-box-title">Shipment 0000091820 - Route & Truck Assignment</span>
+              <div class="sap-field-row"><span class="sap-label">Carrier / Agent:</span><input class="sap-field" value="CARRIER-EXPRESS-MA"/></div>
+              <div class="sap-field-row"><span class="sap-label">Truck Plate No:</span><input class="sap-field" value="48291-A-40"/></div>
+              <div class="sap-field-row"><span class="sap-label">Included Deliveries:</span><input class="sap-field" value="80014590, 80014591" readonly/> <span class="sap-hint-arrow">اضغط Save لحفظ الرحلة</span></div>
+            </div>`
+        },
+        LS24: {
+          name: "LS24 - Display Quants for Material (WM)",
+          s1Fields: [
+            { label: "Warehouse Number", val: "W01", hint: "[1] ➔ كود المستودع WM" },
+            { label: "Material", val: "MAT-10029", hint: "[2] ➔ اضغط F8 لعرض الرفوف (Storage Bins)" }
+          ],
+          s2Html: () => `
+            <table class="sap-alv">
+              <thead><tr><th>Whse</th><th>Storage Type</th><th>Storage Bin (الرف)</th><th>Quant</th><th>Available Stock</th><th>Stock Category</th></tr></thead>
+              <tbody>
+                <tr><td>W01</td><td>001 (High Rack)</td><td><b style="color:#0284c7;">01-04-B2</b></td><td>Q-1001</td><td>${erpDB.loc0001} PC</td><td>Unrestricted</td></tr>
+                <tr><td>W01</td><td>002 (Picking Zone)</td><td><b style="color:#0284c7;">02-01-A1</b></td><td>Q-1002</td><td>${erpDB.loc0002} PC</td><td>Unrestricted</td></tr>
+                <tr><td>W01</td><td>999 (Blocked Zone)</td><td><b style="color:#b91c1c;">BLK-09-Z1</b></td><td>Q-1009</td><td>${erpDB.blocked} PC</td><td>S (Blocked 344)</td></tr>
+              </tbody>
+            </table>`
+        },
+        LX02: {
+          name: "LX02 - WM Stock List",
+          s1Fields: [
+            { label: "Warehouse Number", val: "W01", hint: "[1] ➔ رقم المستودع" },
+            { label: "Storage Type", val: "001 to 999", hint: "[2] ➔ اضغط F8 لجرد المستودع" }
+          ],
+          s2Html: () => `
+            <table class="sap-alv">
+              <thead><tr><th>Material</th><th>Storage Type</th><th>Storage Bin</th><th>Total Stock</th><th>Unit</th></tr></thead>
+              <tbody>
+                <tr><td>MAT-10029</td><td>001</td><td>01-04-B2</td><td>${erpDB.loc0001}</td><td>PC</td></tr>
+                <tr><td>MAT-10029</td><td>002</td><td>02-01-A1</td><td>${erpDB.loc0002}</td><td>PC</td></tr>
+              </tbody>
+            </table>`
+        },
+        LX03: {
+          name: "LX03 - Bin Status Report",
+          s1Fields: [
+            { label: "Warehouse Number", val: "W01", hint: "[1] ➔ كود المستودع" },
+            { label: "Storage Bin", val: "01-*", hint: "[2] ➔ اضغط F8 لعرض خريطة الرفوف" }
+          ],
+          s2Html: () => `
+            <table class="sap-alv">
+              <thead><tr><th>Storage Bin</th><th>Storage Type</th><th>Status</th><th>Material Inside</th><th>Qty</th></tr></thead>
+              <tbody>
+                <tr><td><b>01-04-B2</b></td><td>001</td><td>🔴 Occupied (ممتلئ)</td><td>MAT-10029</td><td>${erpDB.loc0001} PC</td></tr>
+                <tr><td><b>01-04-B3</b></td><td>001</td><td>🟢 Empty (فارغ متاح)</td><td>-</td><td>0 PC</td></tr>
+                <tr><td><b>BLK-09-Z1</b></td><td>999</td><td>🟠 Blocked Stock</td><td>MAT-10029</td><td>${erpDB.blocked} PC</td></tr>
+              </tbody>
+            </table>`
+        },
+        LT24: {
+          name: "LT24 - Transfer Orders for Material",
+          s1Fields: [
+            { label: "Warehouse Number", val: "W01", hint: "[1] ➔ كود المستودع" },
+            { label: "Material", val: "MAT-10029", hint: "[2] ➔ اضغط F8 لعرض أوامر النقل (TO)" }
+          ],
+          s2Html: () => `
+            <table class="sap-alv">
+              <thead><tr><th>TO Number</th><th>Material</th><th>Source Bin</th><th>Dest. Bin</th><th>Qty</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr><td><b>TO-700019</b></td><td>MAT-10029</td><td>GR-ZONE</td><td>01-04-B2</td><td>500 PC</td><td>🟢 Confirmed</td></tr>
+                <tr><td><b>TO-700024</b></td><td>MAT-10029</td><td>01-04-B2</td><td>PICK-ZONE</td><td>80 PC</td><td>🟡 Open (In Progress)</td></tr>
+              </tbody>
+            </table>`
+        },
+        ME21N: {
+          name: "ME21N - Create Purchase Order",
+          s1Fields: [
+            { label: "Vendor Code", val: "V-400192", hint: "[1] ➔ رمز المورد" },
+            { label: "Purch. Org / Group", val: "1000 / 001", hint: "[2] ➔ اضغط Enter لفتح جدول المواد والأسعار" }
+          ],
+          s2Html: () => `
+            <table class="sap-alv">
+              <thead><tr><th>Item</th><th>Material</th><th>PO Quantity</th><th>Net Price</th><th>Plant</th><th>SLoc</th></tr></thead>
+              <tbody>
+                <tr><td>10</td><td>MAT-10029</td><td>500 PC</td><td>25.00 MAD</td><td>1000</td><td>0001</td></tr>
+              </tbody>
+            </table>
+            <p style="margin-top:10px;font-size:12px;color:#15803d;font-weight:bold;">✔ اضغط Save لحفظ وإصدار رقم أمر الشراء.</p>`
+        },
+        MIRO: {
+          name: "MIRO - Enter Incoming Invoice",
+          s1Fields: [
+            { label: "Invoice Date", val: "29.10.2026", hint: "[1] ➔ تاريخ الفاتورة" },
+            { label: "PO Reference", val: "4500018920", hint: "[2] ➔ اضغط Enter لمطابقة الفاتورة مع استلام MIGO" }
+          ],
+          s2Html: () => `
+            <div class="sap-box" style="background:#dcfce7;">
+              <b>🟢 Balance: 0.00 MAD (3-Way Match Verified: PO 4500018920 = GR 500 PC = Invoice 12,500 MAD)</b>
+            </div>
+            <p style="font-size:12px;">اضغط <b>Save</b> لترحيل الفاتورة للحسابات.</p>`
+        }
+      };
+
+      const spec = tcodeSpecs[state.tcode];
+      titleEl.innerText = `${spec.name} - ${state.step === 1 ? 'Selection Screen' : 'Output List / Overview'}`;
+
+      if (state.step === 1) {
+        appBar.innerHTML = `
+          <button class="sap-app-btn exec" onclick="pressEnterOrExecute()">⚡ Execute (F8)</button>
+          <span style="font-size:11px; color:#475569;">الواجهة 1: راجع المعايير ثم اضغط <b>Execute (F8)</b> أو <b>Enter</b></span>
+        `;
+        canvas.innerHTML = `
+          <div class="sap-subscreen-header">
+            <span>الواجهة الأولى (Initial / Selection Screen): ${spec.name}</span>
+            <span style="color:#0284c7;">Step 1 of 2</span>
+          </div>
+          <div class="sap-box">
+            <span class="sap-box-title">Selection Criteria / Header Parameters</span>
+            ${spec.s1Fields.map(f => `
+              <div class="sap-field-row">
+                <span class="sap-label">${f.label}:</span>
+                <input type="text" class="sap-field" value="${f.val}" style="width:200px; font-weight:bold;" />
+                <span class="sap-hint-arrow">${f.hint}</span>
+              </div>
+            `).join("")}
+          </div>
+        `;
+        setGuide(`<b>الواجهة الأولى لـ ${state.tcode}:</b><br>[1] ➔ أدخل معايير البحث في الحقول.<br>[2] ➔ اضغط على <b>⚡ Execute (F8)</b> أو اضغط زر <b>Enter</b> للانتقال إلى الواجهة الثانية!`);
+      } else {
+        appBar.innerHTML = `
+          <button class="sap-app-btn" onclick="handleBackF3()">⬅ Back to Selection (F3)</button>
+          <button class="sap-app-btn post" onclick="handlePostOrSave()">💾 Save / Export</button>
+        `;
+        canvas.innerHTML = `
+          <div class="sap-subscreen-header">
+            <span>الواجهة الثانية (ALV Output / Detail Screen): ${spec.name}</span>
+            <span style="color:#15803d;">Step 2 of 2 (Live Result)</span>
+          </div>
+          ${spec.s2Html()}
+        `;
+        setGuide(`<b>الواجهة الثانية لـ ${state.tcode}:</b><br>أنت الآن تشاهد النتائج الحية.<br>للرجوع إلى الواجهة الأولى اضغط <b>⬅ Back (F3)</b>.`);
+      }
+    }
+
+    // Keyboard Shortcuts (F8, F3, F7)
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "F8") { e.preventDefault(); pressEnterOrExecute(); }
+      if (e.key === "F3") { e.preventDefault(); handleBackF3(); }
+      if (e.key === "F7" && state.tcode === "MIGO") { e.preventDefault(); migoCheckDocument(); }
+    });
+
+    // =========================================================================
+    // 6. COMPLETE WORKING QCM ENGINE (WITH FINAL SCORE & RESTART)
+    // =========================================================================
+    const qcmList = [
+      { q: "ما هي الحركة المستخدمة في MIGO لتحويل بضاعة تالفة من الرصيد المتاح (Unrestricted) إلى الرصيد المحجوز (Blocked)؟", opts: ["344", "343", "311", "101"], ans: 0 },
+      { q: "إذا أردنا فك الحظر عن البضاعة المحجوزة وإعادتها للرصيد الحر بعد إصلاحها، أي حركة نختار؟", opts: ["343", "344", "261", "351"], ans: 0 },
+      { q: "في شاشة التحديد الأولى لأي تقرير مثل MMBE أو LS24، ما هو الزر الذي ينقلك للواجهة الثانية (النتائج)؟", opts: ["Execute (F8) أو Enter", "Back (F3)", "Cancel (F12)", "Hold"], ans: 0 },
+      { q: "أي معاملة تعرض مكان المادة بالضبط داخل الرفوف (Storage Bin & Quant) في نظام المستودعات WM؟", opts: ["LS24", "MB5T", "MIRO", "ME21N"], ans: 0 },
+      { q: "أي معاملة تُستخدم لمراقبة البضاعة المشحونة التي ما زالت في الطريق بين مصنعين (Stock in Transit)؟", opts: ["MB5T", "MB51", "VL06P", "LX03"], ans: 0 }
+    ];
+    let qIdx = 0, qScore = 0, qAnswered = false;
+
+    function renderQcm() {
+      const box = document.getElementById("qcm-container");
+      if (qIdx >= qcmList.length) {
+        box.innerHTML = `
+          <div style="text-align:center; padding:20px;">
+            <h2 style="color:#0b4f6c; margin-bottom:10px;">🎉 اكتمل الاختبار بنجاح!</h2>
+            <p style="font-size:18px; margin-bottom:20px;">نتيجتك النهائية: <b>${qScore} من ${qcmList.length}</b></p>
+            <button class="acad-btn active" style="background:#0b4f6c; color:#fff; padding:10px 24px;" onclick="qIdx=0;qScore=0;qAnswered=false;renderQcm();">🔄 إعادة الاختبار من جديد</button>
+          </div>`;
+        return;
+      }
+      const item = qcmList[qIdx];
+      box.innerHTML = `
+        <div style="display:flex; justify-content:space-between; margin-bottom:12px; color:#64748b; font-size:13px;">
+          <span>اختبار SAP اللوجستي</span>
+          <span>سؤال ${qIdx + 1} من ${qcmList.length} (النقاط: ${qScore})</span>
+        </div>
+        <h3 style="margin-bottom:16px; font-size:16px;">${item.q}</h3>
+        <div id="qcm-opts">
+          ${item.opts.map((o, i) => `<button class="qcm-opt" onclick="answerQcm(${i}, this)">${o}</button>`).join("")}
+        </div>
+        <div style="margin-top:15px; display:flex; justify-content:space-between;">
+          <button class="acad-btn" style="background:#64748b;" onclick="if(qIdx>0){qIdx--;qAnswered=false;renderQcm();}">السابق</button>
+          <button class="acad-btn" style="background:#0b4f6c;" onclick="qIdx++;qAnswered=false;renderQcm();">
+            ${qIdx === qcmList.length - 1 ? "إنهاء وعرض النتيجة 🏁" : "السؤال التالي ⬅"}
+          </button>
+        </div>
+      `;
+    }
+
+    function answerQcm(choice, btn) {
+      if (qAnswered) return;
+      qAnswered = true;
+      const correct = qcmList[qIdx].ans;
+      const all = document.querySelectorAll(".qcm-opt");
+      all[correct].classList.add("correct");
+      if (choice === correct) qScore++;
+      else btn.classList.add("wrong");
+    }
+
+    function switchMainView(viewId, btn) {
+      document.querySelectorAll(".view-section").forEach(v => v.classList.remove("active"));
+      document.querySelectorAll(".acad-btn").forEach(b => b.classList.remove("active"));
+      document.getElementById("view-" + viewId).classList.add("active");
+      btn.classList.add("active");
+    }
+
+    // Initialize Simulator on MIGO Step 1 so user immediately sees Screen 1 -> Enter -> Screen 2
+    window.addEventListener("DOMContentLoaded", () => {
+      refreshLiveStockSidebar();
+      startTransaction("MIGO");
+      renderQcm();
+    });
+  </script>
+</body>
+</html>
